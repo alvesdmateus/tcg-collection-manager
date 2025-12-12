@@ -1,0 +1,194 @@
+### TCG Collection API - Test Requests
+### Use with REST Client extension in VS Code or similar tools
+
+@baseUrl = http://localhost:3000/api
+@token = your_jwt_token_here
+
+### ========================================
+### HEALTH CHECK
+### ========================================
+
+### Check API Health
+GET http://localhost:3000/health
+
+### Get API Info
+GET http://localhost:3000/
+
+### ========================================
+### AUTH ENDPOINTS
+### ========================================
+
+### 1. Register New User
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "senha123"
+}
+
+### 2. Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "senha123"
+}
+
+### 3. Get Current User (Protected)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### ========================================
+### COLLECTIONS ENDPOINTS
+### ========================================
+
+### 4. Create Collection
+POST {{baseUrl}}/collections
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Minha Coleção Principal",
+  "tcg_type": "mtg"
+}
+
+### 5. List All Collections
+GET {{baseUrl}}/collections
+Authorization: Bearer {{token}}
+
+### 6. Get Specific Collection
+# Replace {collection_id} with actual UUID
+GET {{baseUrl}}/collections/{collection_id}
+Authorization: Bearer {{token}}
+
+### 7. Update Collection
+# Replace {collection_id} with actual UUID
+PATCH {{baseUrl}}/collections/{collection_id}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Coleção Commander Atualizada"
+}
+
+### 8. Get Collection Stats
+# Replace {collection_id} with actual UUID
+GET {{baseUrl}}/collections/{collection_id}/stats
+Authorization: Bearer {{token}}
+
+### 9. Delete Collection
+# Replace {collection_id} with actual UUID
+DELETE {{baseUrl}}/collections/{collection_id}
+Authorization: Bearer {{token}}
+
+### ========================================
+### CARDS - SEARCH ENDPOINTS
+### ========================================
+
+### 10. Search Cards in Scryfall
+GET {{baseUrl}}/cards/search?q=lightning+bolt&page=1
+Authorization: Bearer {{token}}
+
+### 11. Autocomplete Card Names
+GET {{baseUrl}}/cards/autocomplete?q=light
+Authorization: Bearer {{token}}
+
+### ========================================
+### CARDS - COLLECTION MANAGEMENT
+### ========================================
+
+### 12. Add Card to Collection
+# Replace {collection_id} with actual UUID
+# scryfall_id example: f2b9983e-20d4-4d12-9e2c-ec6d9a345787 (Lightning Bolt)
+POST {{baseUrl}}/collections/{collection_id}/cards
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "scryfall_id": "f2b9983e-20d4-4d12-9e2c-ec6d9a345787",
+  "owner_name": "João Silva",
+  "current_deck": "Deck de Queimadura",
+  "is_borrowed": false
+}
+
+### 13. List All Cards in Collection (with Scryfall data)
+# Replace {collection_id} with actual UUID
+GET {{baseUrl}}/collections/{collection_id}/cards?includeScryfall=true
+Authorization: Bearer {{token}}
+
+### 14. List All Cards in Collection (without Scryfall data - faster)
+# Replace {collection_id} with actual UUID
+GET {{baseUrl}}/collections/{collection_id}/cards?includeScryfall=false
+Authorization: Bearer {{token}}
+
+### 15. Get Specific Card
+# Replace {card_id} with actual UUID
+GET {{baseUrl}}/cards/{card_id}
+Authorization: Bearer {{token}}
+
+### 16. Update Card Details
+# Replace {card_id} with actual UUID
+PATCH {{baseUrl}}/cards/{card_id}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "owner_name": "Maria Santos",
+  "current_deck": "Deck de Dragões",
+  "is_borrowed": true
+}
+
+### 17. Delete Card
+# Replace {card_id} with actual UUID
+DELETE {{baseUrl}}/cards/{card_id}
+Authorization: Bearer {{token}}
+
+### ========================================
+### COMMON SCRYFALL IDs FOR TESTING
+### ========================================
+
+# Lightning Bolt: f2b9983e-20d4-4d12-9e2c-ec6d9a345787
+# Black Lotus: bd8fa327-dd41-4737-8f19-2cf5eb1f7cdd
+# Sol Ring: 269cdbd8-3522-4d40-9eed-1e6fc3f40b40
+# Counterspell: 1b73a7b6-6851-4c1f-8f8e-3f12f3c0d01c
+# Birds of Paradise: f2b9983e-20d4-4d12-9e2c-ec6d9a345787
+
+### ========================================
+### ERROR TESTING
+### ========================================
+
+### Test Invalid Email
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "invalid-email",
+  "password": "senha123"
+}
+
+### Test Short Password
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test2@example.com",
+  "password": "123"
+}
+
+### Test Unauthorized Access (no token)
+GET {{baseUrl}}/collections
+
+### Test Invalid UUID
+GET {{baseUrl}}/collections/invalid-uuid
+Authorization: Bearer {{token}}
+
+### Test Invalid Scryfall ID
+POST {{baseUrl}}/collections/{collection_id}/cards
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "scryfall_id": "invalid-scryfall-id"
+}
