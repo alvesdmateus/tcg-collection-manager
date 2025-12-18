@@ -19,7 +19,7 @@
 - [x] JWT token generation and verification
 - [x] Protected route middleware
 - [x] Get current user endpoint
-- [x] Password strength validation (min 6 characters)
+- [x] Password strength validation (min 6 characters) 
 - [x] Email format validation
 - [x] Token expiration handling
 
