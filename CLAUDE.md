@@ -4,9 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TCG Collection Manager is a full-stack web application for managing Trading Card Game collections (Magic: The Gathering, Pokémon, Yu-Gi-Oh). The project consists of:
+TCG Collection Manager is a full-stack web application for managing Trading Card Game collections (Magic: The Gathering, Pokémon, Yu-Gi-Oh). Built with TypeScript, Express.js, PostgreSQL backend and React frontend.
+
+**Components**:
 - **Backend**: Node.js/Express REST API with PostgreSQL
-- **Frontend**: React (minimal, in development)
+- **Frontend**: React SPA (minimal, in development)
 - **External Integration**: Scryfall API for Magic: The Gathering card data
 
 ## Repository Structure
@@ -18,118 +20,128 @@ tcg-collection-manager/
 │       ├── config/    # Database configuration and migrations
 │       ├── middleware/  # Auth, validation, error handling
 │       ├── modules/   # Feature modules (auth, collections, cards)
-│       └── types/     # TypeScript type definitions
+│       ├── types/     # TypeScript type definitions
+│       └── __tests__/ # Test suite with Jest
 └── frontend/          # React application (minimal)
     └── src/
-        ├── api/       # Backend API client
-        ├── components/  # React components
-        ├── contexts/  # React contexts (AuthContext)
-        └── types/     # Frontend type definitions
+        ├── components/  # Auth, Collections, Cards components
+        ├── contexts/  # AuthContext for global state
+        └── i18n/      # Internationalization (pt-BR)
 ```
 
 ## Development Commands
 
-### Backend
-
+### Backend (Node.js/Express)
 ```bash
-# Navigate to backend
 cd backend
+npm install                 # Install dependencies
+npm run dev                 # Start development server (ts-node-dev with auto-reload)
+npm run build               # Compile TypeScript to JavaScript
+npm start                   # Run production build
+npm run migrate             # Run database migrations
+npm test                    # Run test suite
+npm run test:watch          # Run tests in watch mode
+npm run test:coverage       # Run tests with coverage report
+```
 
-# Install dependencies
-npm install
+### Database Operations
+```bash
+# Connect to PostgreSQL
+psql -U postgres -d tcg_collection
 
-# Run database migrations
-npm run migrate
+# Run migrations
+cd backend && npm run migrate
 
 # Reset database (WARNING: deletes all data)
 npm run migrate -- --reset
 
-# Development server (hot-reload)
-npm run dev
-
-# Build for production
-npm run build
-
-# Run production build
-npm start
+# Common psql commands once connected:
+\dt                         # List all tables
+\d users                    # Describe table structure
+\d collections
+\d cards
 ```
 
-### Frontend
-
-The frontend is minimal and currently in development. Basic React components exist for authentication and collection management.
+### Testing API
+Use the `backend/api-tests.http` file with VS Code REST Client extension, or use curl/Postman. The file contains complete API examples including auth flow.
 
 ## Architecture
 
-### Backend Architecture
+### Backend Structure (Three-Layer Architecture)
 
-The backend follows a **three-layer architecture** pattern:
-
-1. **Routes Layer** (`*.routes.ts`): Defines HTTP endpoints and applies middleware
-2. **Controller Layer** (`*.controller.ts`): Handles HTTP requests/responses, calls services
-3. **Service Layer** (`*.service.ts`): Contains business logic and database operations
-
-#### Module Organization
-
-Each feature is organized as a self-contained module:
+The backend follows a clean **Service → Controller → Routes** pattern:
 
 ```
-modules/
-├── auth/
-│   ├── auth.service.ts       # Business logic (register, login, verify)
-│   ├── auth.controller.ts    # HTTP handlers
-│   └── auth.routes.ts        # Endpoint definitions
-├── collections/
-│   ├── collections.service.ts
-│   ├── collections.controller.ts
-│   └── collections.routes.ts
-└── cards/
-    ├── scryfall.service.ts   # External API integration
-    ├── cards.service.ts
-    ├── cards.controller.ts
-    └── cards.routes.ts
+backend/src/
+├── modules/
+│   ├── auth/
+│   │   ├── auth.service.ts      # Business logic: password hashing, JWT generation
+│   │   ├── auth.controller.ts   # HTTP handlers: parse requests, format responses
+│   │   └── auth.routes.ts       # Route definitions + validation rules
+│   ├── collections/
+│   │   ├── collections.service.ts    # CRUD operations, ownership validation
+│   │   ├── collections.controller.ts # HTTP layer
+│   │   └── collections.routes.ts     # Protected routes
+│   └── cards/
+│       ├── scryfall.service.ts       # External API wrapper for Scryfall
+│       ├── cards.service.ts          # Card management logic
+│       ├── cards.controller.ts       # HTTP layer
+│       └── cards.routes.ts           # Protected routes
 ```
 
-### Database Schema
-
-Three main tables with cascading relationships:
-
-```sql
-users (id, email, password_hash, created_at)
-  ↓
-collections (id, user_id, name, tcg_type, created_at)
-  ↓
-cards (id, collection_id, scryfall_id, owner_name, current_deck, is_borrowed, added_at)
-```
-
-**Key Design Decisions**:
-- UUID primary keys for security
-- Cards store `scryfall_id` (reference) instead of full card data
-- Card data is enriched with Scryfall API on retrieval
-- Cascading deletes maintain referential integrity
-- Indexes on foreign keys for query performance
+**Key Pattern**: Routes → Controller → Service → Database
+- **Routes**: Define endpoints, apply middleware (auth, validation)
+- **Controllers**: Handle HTTP concerns (req/res), call services
+- **Services**: Contain business logic, interact with database
+- **Never bypass layers**: Controllers should not access database directly
 
 ### Authentication Flow
 
 1. User registers/logs in → receives JWT token
-2. Token sent in `Authorization: Bearer <token>` header
-3. `authenticate` middleware (backend/src/middleware/auth.ts) verifies token
-4. User ID attached to request object for authorization checks
-5. Service layer verifies resource ownership (collections/cards belong to user)
+2. JWT tokens are stored in `Authorization: Bearer <token>` headers
+3. The `authenticate` middleware (src/middleware/auth.ts) extracts and verifies tokens
+4. Decoded user info is attached to `req.user` for use in controllers
+5. All protected routes use the `authenticate` middleware
+6. Password hashing uses bcrypt with 10 salt rounds
 
-### Scryfall Integration
+**Security Notes**:
+- Never log JWT tokens or passwords
+- All database queries use parameterized queries ($1, $2) to prevent SQL injection
+- Resource ownership is verified in service layer before any mutations
+- JWT_SECRET must be strong in production (use crypto.randomBytes(64))
 
-The application integrates with the Scryfall API for Magic: The Gathering card data:
+### Database Schema
 
-- **Service**: `backend/src/modules/cards/scryfall.service.ts`
-- **Base URL**: `https://api.scryfall.com`
-- **Rate Limit**: 10 requests/second (managed by Scryfall)
-- **Caching**: Not implemented yet - recommended for production
+```
+users (id, email, password_hash, created_at)
+  ↓ 1:N (ON DELETE CASCADE)
+collections (id, user_id, name, tcg_type, created_at)
+  ↓ 1:N (ON DELETE CASCADE)
+cards (id, collection_id, scryfall_id, owner_name, current_deck, is_borrowed, added_at)
+```
+
+**Key Design Decisions**:
+- UUIDs are used for all primary keys (security + scalability)
+- Foreign keys have CASCADE DELETE (deleting a collection deletes all its cards)
+- Indexes exist on all foreign keys and email for performance
+- Timestamps use PostgreSQL's TIMESTAMP type (timezone-aware)
+- Cards store `scryfall_id` (reference) instead of full card data
+- Card data is enriched with Scryfall API on retrieval
+
+### Scryfall API Integration
+
+The `scryfall.service.ts` wraps all Scryfall API calls:
+
+**Base URL**: `https://api.scryfall.com`
+**Rate Limit**: 10 requests/second (managed by Scryfall)
 
 **Key Endpoints Used**:
 - `/cards/:id` - Get card by Scryfall ID
 - `/cards/search` - Search cards by query
 - `/cards/named` - Get card by exact name
 - `/cards/autocomplete` - Autocomplete suggestions
+
+**Important**: When users add cards, the frontend searches Scryfall first, then sends the `scryfall_id` to the backend. The backend validates the card exists via Scryfall before saving to database.
 
 ### Middleware Stack
 
@@ -143,21 +155,86 @@ Middleware order is critical in backend/src/app.ts:
 6. **Route Handlers** - Business logic
 7. **Error Handler** - Must be LAST to catch all errors
 
-### Error Handling
+### Error Handling Pattern
 
 Centralized error handling via custom `AppError` class:
 
-- **AppError** (backend/src/types/index.ts): Custom error with status code
-- **errorHandler** (backend/src/middleware/errorHandler.ts): Global Express error handler
-- Controllers throw `AppError` instances
-- Error handler catches and formats response consistently
+1. Throw `AppError` for expected operational errors:
+```typescript
+throw new AppError('User not found', 404);
+```
+
+2. **AppError** (backend/src/types/index.ts): Custom error with status code
+3. **errorHandler** (backend/src/middleware/errorHandler.ts): Global Express error handler
+4. Controllers throw `AppError` instances
+5. Error handler catches and formats response consistently
+6. Async errors are handled by the `asyncHandler` wrapper (no try-catch needed in routes)
+
+## Common Development Tasks
+
+### Adding a New Protected Route
+
+1. Add route handler in appropriate routes file with `authenticate` middleware:
+```typescript
+router.get('/endpoint', authenticate, controller.handler);
+```
+
+2. Add validation rules using express-validator:
+```typescript
+import { body, param } from 'express-validator';
+router.post('/', authenticate, [
+  body('field').notEmpty().withMessage('Required'),
+], controller.create);
+```
+
+3. Implement controller method (handle HTTP, call service):
+```typescript
+async create(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  const userId = req.user!.userId;  // Available after authenticate middleware
+  const result = await service.create(userId, req.body);
+  res.status(201).json({ success: true, data: result });
+}
+```
+
+4. Implement service method (business logic, database access):
+```typescript
+async create(userId: string, data: CreateDto): Promise<ResponseDto> {
+  const result = await pool.query(
+    'INSERT INTO table (user_id, field) VALUES ($1, $2) RETURNING *',
+    [userId, data.field]
+  );
+  return result.rows[0];
+}
+```
+
+### Adding Database Migrations
+
+Migrations are in `backend/src/config/migrations.ts`. To add a new table or column:
+
+1. Add SQL in `runMigrations()` function using `CREATE TABLE IF NOT EXISTS` or `ALTER TABLE`
+2. Always use parameterized queries
+3. Add appropriate indexes for foreign keys and frequently queried columns
+4. Add DROP TABLE statement in `rollbackMigrations()` for cleanup
+5. Run `npm run migrate` to apply changes
+
+**Important**: The migration system is idempotent (safe to run multiple times). There's also a `rollbackMigrations()` function for development.
+
+### Working with Types
+
+All TypeScript types are centralized in `backend/src/types/index.ts`:
+- Request DTOs (data coming from client)
+- Response DTOs (data sent to client)
+- Database models
+- JWT payload structure (`AuthTokenPayload`)
+- Custom error class `AppError`
+
+When adding new features, define types first, then implement handlers.
 
 ## Environment Configuration
 
 Required environment variables (backend):
 
 ```env
-# Server
 PORT=3000
 NODE_ENV=development
 
@@ -169,35 +246,116 @@ DB_USER=postgres
 DB_PASSWORD=your_password
 
 # JWT
-JWT_SECRET=your_secret_key
+JWT_SECRET=your_secret_key  # Generate with: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 JWT_EXPIRES_IN=7d
 
 # CORS
 CORS_ORIGIN=http://localhost:5173
+
+# Scryfall
+SCRYFALL_API_BASE=https://api.scryfall.com
 ```
 
-## Testing the API
+## Frontend Architecture
 
-The backend README.md (backend/README.md) contains comprehensive API documentation with all endpoints, request/response examples, and curl commands.
+The frontend is a React SPA using Context API for state:
 
-**Quick Testing**:
-1. Register: `POST /api/auth/register`
-2. Login: `POST /api/auth/login` (get token)
-3. Create collection: `POST /api/collections` (with Bearer token)
-4. Search cards: `GET /api/cards/search?q=lightning+bolt`
-5. Add card: `POST /api/collections/:id/cards`
+```
+frontend/src/
+├── components/
+│   ├── Auth/          # Login/Register forms
+│   ├── Collections/   # Collection list and forms
+│   └── Cards/         # Card list, forms, and hover preview
+├── contexts/
+│   └── AuthContext.tsx  # Global auth state (user, token, login/logout)
+└── i18n/              # Internationalization (pt-BR)
+```
+
+**Key Notes**:
+- Auth token is stored in AuthContext and localStorage
+- All API calls include `Authorization: Bearer ${token}` header
+- The CardHoverPreview component shows Scryfall card images on hover
+- Frontend is minimal and currently in development
+
+## Testing
+
+### Test Structure
+Tests are located in `backend/src/__tests__/`:
+- **Unit tests**: Service layer business logic (auth.service.test.ts)
+- **Mock database**: In-memory mock (`MockPool`) for fast, isolated tests
+- **No real database needed**: Tests use mocked dependencies
+
+### Running Tests
+```bash
+cd backend
+npm test                    # Run all tests
+npm run test:watch          # Auto-rerun on changes
+npm run test:coverage       # Generate coverage report
+```
+
+### Writing Tests
+1. Create test files in `src/__tests__/modules/` with `.test.ts` extension
+2. Mock the database pool using `MockPool` from test helpers
+3. Use `beforeEach` to clean database state between tests
+4. Follow Arrange-Act-Assert pattern
+5. Test both success and error cases
+
+Example:
+```typescript
+import { MockPool, cleanupTestDatabase } from '../helpers/testDatabase';
+
+jest.mock('../../config/database', () => {
+  const { MockPool } = jest.requireActual('../helpers/testDatabase');
+  return new MockPool();
+});
+
+import pool from '../../config/database';
+import MyService from '../../modules/my/my.service';
+
+describe('MyService', () => {
+  const mockPool = pool as unknown as MockPool;
+
+  beforeEach(() => {
+    cleanupTestDatabase(mockPool);
+  });
+
+  it('should do something', async () => {
+    const result = await MyService.method();
+    expect(result).toBeDefined();
+  });
+});
+```
+
+See `backend/src/__tests__/README.md` for detailed testing guide.
+
+## Important Conventions
+
+1. **All database queries must use parameterized queries** ($1, $2, etc.) - NEVER string interpolation
+2. **Resource ownership verification**: Always verify `user_id` matches `req.user.userId` before mutations
+3. **Error messages in Portuguese**: User-facing errors are in pt-BR (e.g., "Usuário não encontrado")
+4. **Async/await everywhere**: No callback-style code
+5. **Type safety**: Always define explicit types, avoid `any`
+6. **Module pattern**: Each service is a singleton exported with `export default new ServiceClass()`
+
+## Testing Workflow
+
+1. Start PostgreSQL: `sudo systemctl start postgresql` or `brew services start postgresql`
+2. Ensure database exists: `psql -U postgres -c "CREATE DATABASE tcg_collection;"`
+3. Run migrations: `cd backend && npm run migrate`
+4. Start backend: `npm run dev`
+5. Test health check: `curl http://localhost:3000/health`
+6. Use `api-tests.http` file to test complete user flow:
+   - Register user → Login → Create collection → Search card → Add card
 
 ## Key Technical Decisions
 
 ### TypeScript Configuration
-
 - **Strict Mode**: Maximum type safety enabled
 - **No Implicit Any**: All types must be explicit
 - **Return Types**: Required on all functions
 - **Unused Variables**: Flagged as errors
 
 ### Security Measures
-
 - **Password Hashing**: bcrypt with 10 salt rounds
 - **SQL Injection Prevention**: Parameterized queries throughout
 - **JWT Expiration**: Configurable token lifetime
@@ -205,51 +363,25 @@ The backend README.md (backend/README.md) contains comprehensive API documentati
 - **Input Validation**: express-validator on all endpoints
 
 ### Database Patterns
-
 - **Connection Pooling**: Reuse database connections for performance
 - **Transactions**: Not implemented yet - needed for complex operations
 - **Migrations**: Run via `npm run migrate`, schema in config/migrations.ts
 - **Foreign Key Constraints**: Enforce referential integrity at DB level
 
-## Common Development Tasks
-
-### Adding a New API Endpoint
-
-1. Define route in `modules/[feature]/[feature].routes.ts`
-2. Add validation middleware if needed
-3. Implement controller handler in `[feature].controller.ts`
-4. Add business logic in `[feature].service.ts`
-5. Update types in `types/index.ts` if needed
-
-### Adding a New Database Table
-
-1. Add CREATE TABLE statement in `config/migrations.ts` → `runMigrations()`
-2. Add DROP TABLE statement in `rollbackMigrations()` for cleanup
-3. Add indexes for foreign keys and frequently queried columns
-4. Run `npm run migrate` to apply changes
-
-### Modifying Authentication
-
-- JWT logic: `modules/auth/auth.service.ts`
-- Token verification: `middleware/auth.ts`
-- Token payload structure: `types/index.ts` → `AuthTokenPayload`
-
 ## Known Limitations
 
-- No rate limiting implemented (needed for production)
-- No caching for Scryfall API calls (causes slow responses)
-- No pagination on large collections (performance issue)
-- No unit/integration tests (needed for reliability)
-- Simple console logging (should use Winston/Pino in production)
-- Frontend is minimal (React components are placeholder)
+- **No rate limiting** implemented (needed for production)
+- **No caching** for Scryfall API calls (causes slow responses)
+- **No pagination** on large collections (performance issue with 100+ cards)
+- **No transactions** for complex multi-table operations
+- **Simple console logging** (should use Winston/Pino in production)
+- **Frontend is minimal** (React components are placeholder, needs full implementation)
 
-## Frontend Architecture
+## References
 
-The frontend is currently minimal with basic components:
-
-- **AuthContext**: React context for authentication state
-- **Components**: Login, Register, CollectionList, CardList, CardForm
-- **API Integration**: Planned but not fully implemented
-- **i18n**: Internationalization setup exists
-
-The frontend architecture should follow React best practices when expanded.
+- Full architecture diagrams: `ARCHITECTURE.md`
+- Quick setup guide: `QUICKSTART.md`
+- Project summary: `PROJECT_SUMMARY.md`
+- Test suite documentation: `backend/src/__tests__/README.md`
+- Backend API documentation: `backend/README.md`
+- Scryfall API docs: https://scryfall.com/docs/api
