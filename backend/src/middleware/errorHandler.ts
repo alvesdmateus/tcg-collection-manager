@@ -1,4 +1,4 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthenticatedRequest, JwtPayload } from '../types';
 
@@ -47,4 +47,68 @@ export function authenticate(
 export function generateToken(userId: string, email: string): string {
   const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
   return jwt.sign({ userId, email }, JWT_SECRET, { expiresIn });
+}
+
+/**
+ * Async handler wrapper to catch errors in async route handlers
+ * Eliminates the need for try-catch blocks in every route
+ */
+export const asyncHandler = (
+  fn: (req: Request | AuthenticatedRequest, res: Response, next: NextFunction) => Promise<any>
+) => {
+  return (req: Request | AuthenticatedRequest, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+};
+
+/**
+ * Global Error Handler Middleware
+ * Catches all errors and formats them into consistent JSON responses
+ * Must be registered LAST in the middleware chain
+ */
+export function errorHandler(
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  // Log error for debugging (in production, use proper logging library)
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Error:', err);
+  }
+
+  // Handle AppError instances (operational errors)
+  if (err.name === 'AppError') {
+    res.status(err.statusCode).json({
+      error: err.message,
+    });
+    return;
+  }
+
+  // Handle validation errors from express-validator
+  if (err.array && typeof err.array === 'function') {
+    res.status(400).json({
+      error: 'Erro de validação',
+      details: err.array(),
+    });
+    return;
+  }
+
+  // Handle JWT errors
+  if (err instanceof jwt.JsonWebTokenError) {
+    res.status(401).json({ error: 'Token inválido' });
+    return;
+  }
+
+  if (err instanceof jwt.TokenExpiredError) {
+    res.status(401).json({ error: 'Token expirado' });
+    return;
+  }
+
+  // Handle unknown errors (programming errors)
+  res.status(500).json({
+    error: process.env.NODE_ENV === 'development'
+      ? err.message
+      : 'Erro interno do servidor',
+  });
 }

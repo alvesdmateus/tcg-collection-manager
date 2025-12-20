@@ -1,0 +1,87 @@
+.collections-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.collections-header {
+  background-color: #1a1a1a;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.collections-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #646cff;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info span {
+  color: #a1a1aa;
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #646cff;
+  background-color: transparent;
+  color: #646cff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: #646cff;
+  color: white;
+}
+
+.collections-main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-state h2 {
+  margin-bottom: 1rem;
+  color: rgba(255, 255, 255, 0.87);
+}
+
+.empty-state p {
+  color: #a1a1aa;
+  margin: 0.5rem 0;
+}
+
+.success-message {
+  color: #4ade80;
+  font-weight: 500;
+  margin-top: 2rem;
+}
+
+@media (prefers-color-scheme: light) {
+  .collections-header {
+    background-color: #f9f9f9;
+    border-bottom-color: #e5e5e5;
+  }
+
+  .empty-state h2 {
+    color: #213547;
+  }
+}
