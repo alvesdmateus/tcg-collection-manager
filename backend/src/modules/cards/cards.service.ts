@@ -102,6 +102,10 @@ class CardsService {
     userId: string,
     data: AddCardRequest
   ): Promise<CardWithDetails> {
+    // Debug logging
+    console.log('📝 Adding card with data:', JSON.stringify(data, null, 2));
+    console.log('📊 Quantity value:', data.quantity, 'Type:', typeof data.quantity);
+
     // Verify collection ownership
     await collectionsService.getCollectionById(collectionId, userId);
 
