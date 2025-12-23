@@ -6,25 +6,38 @@ import {
 } from '../../types';
 
 /**
- * Scryfall API Service
- * 
- * Wrapper for Scryfall API calls.
+ * Cache entry for Scryfall data
+ */
+interface CacheEntry {
+  data: ScryfallCard;
+  timestamp: number;
+}
+
+/**
+ * Scryfall API Service with Caching
+ *
+ * Wrapper for Scryfall API calls with in-memory caching.
  * Scryfall is a comprehensive Magic: The Gathering card database.
- * 
+ *
  * API Documentation: https://scryfall.com/docs/api
- * 
+ *
  * Features:
  * - Card search by name
- * - Get card by ID
+ * - Get card by ID (with caching)
  * - Get card by exact name
  * - Autocomplete suggestions
- * 
+ * - In-memory cache with configurable TTL
+ *
  * Rate Limiting:
  * Scryfall requests 50-100ms between requests.
- * For production, implement rate limiting and caching.
+ * Caching significantly reduces API calls.
  */
 class ScryfallService {
   private readonly baseUrl = 'https://api.scryfall.com';
+  private readonly cache = new Map<string, CacheEntry>();
+  private readonly cacheTTL = 60 * 60 * 1000; // 1 hour in milliseconds
+  private cacheHits = 0;
+  private cacheMisses = 0;
 
   /**
    * Search cards by name
@@ -57,12 +70,55 @@ class ScryfallService {
   }
 
   /**
-   * Get card by Scryfall ID
-   * 
+   * Check if cache entry is still valid
+   */
+  private isCacheValid(entry: CacheEntry): boolean {
+    return Date.now() - entry.timestamp < this.cacheTTL;
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getCacheStats(): { hits: number; misses: number; size: number; hitRate: string } {
+    const total = this.cacheHits + this.cacheMisses;
+    const hitRate = total > 0 ? ((this.cacheHits / total) * 100).toFixed(2) : '0.00';
+    return {
+      hits: this.cacheHits,
+      misses: this.cacheMisses,
+      size: this.cache.size,
+      hitRate: `${hitRate}%`,
+    };
+  }
+
+  /**
+   * Clear expired cache entries
+   */
+  private cleanCache(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp >= this.cacheTTL) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Get card by Scryfall ID (with caching)
+   *
    * @param scryfallId - Scryfall card ID
    * @returns Card data
    */
   async getCardById(scryfallId: string): Promise<ScryfallCard> {
+    // Check cache first
+    const cached = this.cache.get(scryfallId);
+    if (cached && this.isCacheValid(cached)) {
+      this.cacheHits++;
+      return cached.data;
+    }
+
+    // Cache miss - fetch from API
+    this.cacheMisses++;
+
     try {
       const url = `${this.baseUrl}/cards/${scryfallId}`;
       const response = await fetch(url);
@@ -74,7 +130,20 @@ class ScryfallService {
         throw new Error(`Scryfall API error: ${response.statusText}`);
       }
 
-      return (await response.json()) as ScryfallCard;
+      const data = (await response.json()) as ScryfallCard;
+
+      // Store in cache
+      this.cache.set(scryfallId, {
+        data,
+        timestamp: Date.now(),
+      });
+
+      // Periodically clean expired entries
+      if (this.cacheMisses % 100 === 0) {
+        this.cleanCache();
+      }
+
+      return data;
     } catch (error) {
       if (error instanceof AppError) throw error;
       console.error('Scryfall get card error:', error);

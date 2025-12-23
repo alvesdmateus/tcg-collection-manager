@@ -65,9 +65,9 @@ export default function CollectionCard({ collection, onEdit, onDelete }: Collect
           <span className="stat-value">{collection.card_count || 0}</span>
         </div>
         <div className="stat">
-          <span className="stat-label">Created</span>
-          <span className="stat-value">
-            {new Date(collection.created_at).toLocaleDateString()}
+          <span className="stat-label">Total Value</span>
+          <span className="stat-value stat-price">
+            ${(collection.total_value || 0).toFixed(2)}
           </span>
         </div>
       </div>

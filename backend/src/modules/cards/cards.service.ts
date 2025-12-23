@@ -49,6 +49,10 @@ class CardsService {
       })
     );
 
+    // Log cache statistics
+    const cacheStats = scryfallService.getCacheStats();
+    console.log(`✅ Fetched ${cardsWithDetails.length} cards with Scryfall data`);
+    console.log(`📊 Scryfall Cache: ${cacheStats.hits} hits, ${cacheStats.misses} misses (${cacheStats.hitRate} hit rate)`);
     return cardsWithDetails;
   }
 

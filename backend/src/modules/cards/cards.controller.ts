@@ -52,13 +52,16 @@ class CardsController {
   async addCard(req: AuthenticatedRequest, res: Response): Promise<void> {
     const { collectionId } = req.params;
     const userId = req.user!.userId;
-    const { scryfall_id, owner_name, current_deck, is_borrowed } = req.body;
+    const { scryfall_id, owner_name, current_deck, is_borrowed, quantity, set_code, set_name } = req.body;
 
     const card = await cardsService.addCard(collectionId, userId, {
       scryfall_id,
       owner_name,
       current_deck,
       is_borrowed,
+      quantity,
+      set_code,
+      set_name,
     });
 
     res.status(201).json({
@@ -74,12 +77,15 @@ class CardsController {
   async updateCard(req: AuthenticatedRequest, res: Response): Promise<void> {
     const { id } = req.params;
     const userId = req.user!.userId;
-    const { owner_name, current_deck, is_borrowed } = req.body;
+    const { owner_name, current_deck, is_borrowed, quantity, set_code, set_name } = req.body;
 
     const card = await cardsService.updateCard(id, userId, {
       owner_name,
       current_deck,
       is_borrowed,
+      quantity,
+      set_code,
+      set_name,
     });
 
     res.status(200).json({

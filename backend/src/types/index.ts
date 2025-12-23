@@ -67,7 +67,15 @@ export interface Collection {
 }
 
 /**
- * Collection with card count
+ * Collection with statistics
+ */
+export interface CollectionWithStats extends Collection {
+  card_count: number;
+  total_value: number;
+}
+
+/**
+ * Collection with card count (deprecated - use CollectionWithStats)
  */
 export interface CollectionStats extends Collection {
   card_count: number;

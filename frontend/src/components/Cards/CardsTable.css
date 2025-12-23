@@ -27,6 +27,29 @@
   letter-spacing: 0.5px;
 }
 
+.cards-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.cards-table th.sortable:hover {
+  background-color: #e9ecef;
+}
+
+.sort-icon {
+  display: inline-block;
+  margin-left: 4px;
+  color: #adb5bd;
+  font-size: 14px;
+  transition: color 0.15s ease;
+}
+
+.sort-icon.active {
+  color: #4f46e5;
+  font-weight: bold;
+}
+
 .cards-table tbody tr {
   border-bottom: 1px solid #e9ecef;
   transition: background-color 0.15s ease;
@@ -99,6 +122,7 @@
 
 .col-owner {
   min-width: 120px;
+  color: #495057;
 }
 
 .col-deck {
@@ -107,13 +131,24 @@
 }
 
 .col-price {
-  width: 80px;
+  width: 90px;
   text-align: right;
 }
 
 .price {
   font-weight: 600;
   color: #28a745;
+}
+
+.col-total {
+  width: 100px;
+  text-align: right;
+}
+
+.total-value {
+  font-weight: 700;
+  color: #22c55e;
+  font-size: 15px;
 }
 
 .col-status {

@@ -1,6 +1,8 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import Header from '../Header/Header';
 import './Auth.css';
 
 export default function Register() {
@@ -10,6 +12,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const { t } = useTranslation();
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -18,12 +21,12 @@ export default function Register() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordMismatch'));
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('auth.passwordTooShort'));
       return;
     }
 
@@ -33,72 +36,75 @@ export default function Register() {
       await register(email, password);
       navigate('/collections');
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      setError(err.message || t('auth.registrationFailed'));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h1>Register</h1>
-        <p className="auth-subtitle">Create your TCG Collection Manager account</p>
+    <>
+      <Header showUserInfo={false} />
+      <div className="auth-container">
+        <div className="auth-card">
+          <h1>{t('auth.registerTitle')}</h1>
+          <p className="auth-subtitle">{t('auth.registerSubtitle')}</p>
 
-        {error && <div className="error-message">{error}</div>}
+          {error && <div className="error-message">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="your@email.com"
-              disabled={isLoading}
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="form-group">
+              <label htmlFor="email">{t('auth.email')}</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder={t('auth.emailPlaceholder')}
+                disabled={isLoading}
+              />
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-              minLength={6}
-              disabled={isLoading}
-            />
-            <small>Minimum 6 characters</small>
-          </div>
+            <div className="form-group">
+              <label htmlFor="password">{t('auth.password')}</label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder={t('auth.passwordPlaceholder')}
+                minLength={6}
+                disabled={isLoading}
+              />
+              <small>{t('auth.passwordMinLength')}</small>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-              minLength={6}
-              disabled={isLoading}
-            />
-          </div>
+            <div className="form-group">
+              <label htmlFor="confirmPassword">{t('auth.confirmPassword')}</label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                placeholder={t('auth.passwordPlaceholder')}
+                minLength={6}
+                disabled={isLoading}
+              />
+            </div>
 
-          <button type="submit" className="btn-primary" disabled={isLoading}>
-            {isLoading ? 'Creating account...' : 'Register'}
-          </button>
-        </form>
+            <button type="submit" className="btn-primary" disabled={isLoading}>
+              {isLoading ? t('auth.creatingAccount') : t('auth.register')}
+            </button>
+          </form>
 
-        <p className="auth-footer">
-          Already have an account? <Link to="/login">Login here</Link>
-        </p>
+          <p className="auth-footer">
+            {t('auth.hasAccount')} <Link to="/login">{t('auth.loginHere')}</Link>
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

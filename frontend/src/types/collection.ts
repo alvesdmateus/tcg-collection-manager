@@ -11,6 +11,7 @@ export interface Collection {
   tcg_type: TcgType;
   created_at: string;
   card_count?: number;
+  total_value?: number;
 }
 
 export interface CreateCollectionRequest {

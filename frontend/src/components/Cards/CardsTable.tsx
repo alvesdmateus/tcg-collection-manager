@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CardWithDetails, UpdateCardRequest } from '../../types/card';
 import CardEditModal from './CardEditModal';
 import './CardsTable.css';
@@ -9,9 +10,15 @@ interface CardsTableProps {
   onDelete: (cardId: string) => Promise<void>;
 }
 
+type SortField = 'name' | 'set' | 'quantity' | 'owner' | 'deck' | 'price' | 'total';
+type SortDirection = 'asc' | 'desc';
+
 export default function CardsTable({ cards, onUpdate, onDelete }: CardsTableProps) {
+  const { t } = useTranslation();
   const [editingCard, setEditingCard] = useState<CardWithDetails | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const handleEdit = (card: CardWithDetails) => {
     setEditingCard(card);
@@ -23,7 +30,74 @@ export default function CardsTable({ cards, onUpdate, onDelete }: CardsTableProp
     }
   };
 
-  const hoveredCard = cards.find(c => c.id === hoveredCardId);
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Sort cards
+  const sortedCards = useMemo(() => {
+    const sorted = [...cards].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'name':
+          aValue = a.scryfall_data?.name || '';
+          bValue = b.scryfall_data?.name || '';
+          break;
+        case 'set':
+          aValue = a.set_name || a.scryfall_data?.set_name || '';
+          bValue = b.set_name || b.scryfall_data?.set_name || '';
+          break;
+        case 'quantity':
+          aValue = a.quantity || 0;
+          bValue = b.quantity || 0;
+          break;
+        case 'owner':
+          aValue = a.owner_name || '';
+          bValue = b.owner_name || '';
+          break;
+        case 'deck':
+          aValue = a.current_deck || '';
+          bValue = b.current_deck || '';
+          break;
+        case 'price':
+          aValue = parseFloat(a.scryfall_data?.prices?.usd || a.scryfall_data?.prices?.usd_foil || '0');
+          bValue = parseFloat(b.scryfall_data?.prices?.usd || b.scryfall_data?.prices?.usd_foil || '0');
+          break;
+        case 'total':
+          aValue = parseFloat(a.scryfall_data?.prices?.usd || a.scryfall_data?.prices?.usd_foil || '0') * (a.quantity || 1);
+          bValue = parseFloat(b.scryfall_data?.prices?.usd || b.scryfall_data?.prices?.usd_foil || '0') * (b.quantity || 1);
+          break;
+        default:
+          return 0;
+      }
+
+      if (typeof aValue === 'string') {
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      } else {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+    });
+
+    return sorted;
+  }, [cards, sortField, sortDirection]);
+
+  const hoveredCard = sortedCards.find(c => c.id === hoveredCardId);
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <span className="sort-icon">↕</span>;
+    return <span className="sort-icon active">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
+  };
 
   return (
     <>
@@ -31,19 +105,34 @@ export default function CardsTable({ cards, onUpdate, onDelete }: CardsTableProp
         <table className="cards-table">
           <thead>
             <tr>
-              <th className="col-image">Card</th>
-              <th className="col-name">Name</th>
-              <th className="col-set">Set</th>
-              <th className="col-quantity">Qty</th>
-              <th className="col-owner">Owner</th>
-              <th className="col-deck">Deck</th>
-              <th className="col-price">Price</th>
-              <th className="col-status">Status</th>
-              <th className="col-actions">Actions</th>
+              <th className="col-image">{t('cards.cardImage') || 'Card'}</th>
+              <th className="col-name sortable" onClick={() => handleSort('name')}>
+                {t('cards.cardName') || 'Name'} <SortIcon field="name" />
+              </th>
+              <th className="col-set sortable" onClick={() => handleSort('set')}>
+                {t('cards.set') || 'Set'} <SortIcon field="set" />
+              </th>
+              <th className="col-quantity sortable" onClick={() => handleSort('quantity')}>
+                {t('cards.quantity') || 'Qty'} <SortIcon field="quantity" />
+              </th>
+              <th className="col-owner sortable" onClick={() => handleSort('owner')}>
+                {t('cards.ownerName') || 'Owner'} <SortIcon field="owner" />
+              </th>
+              <th className="col-deck sortable" onClick={() => handleSort('deck')}>
+                {t('cards.currentDeck') || 'Deck'} <SortIcon field="deck" />
+              </th>
+              <th className="col-price sortable" onClick={() => handleSort('price')}>
+                {t('cards.unitPrice') || 'Unit Price'} <SortIcon field="price" />
+              </th>
+              <th className="col-total sortable" onClick={() => handleSort('total')}>
+                {t('cards.totalValue') || 'Total Value'} <SortIcon field="total" />
+              </th>
+              <th className="col-status">{t('cards.status') || 'Status'}</th>
+              <th className="col-actions">{t('cards.actions') || 'Actions'}</th>
             </tr>
           </thead>
           <tbody>
-            {cards.map((card) => (
+            {sortedCards.map((card) => (
               <tr
                 key={card.id}
                 onMouseEnter={() => setHoveredCardId(card.id)}
@@ -76,11 +165,23 @@ export default function CardsTable({ cards, onUpdate, onDelete }: CardsTableProp
                 <td className="col-quantity">
                   <span className="quantity-badge">{card.quantity}</span>
                 </td>
-                <td className="col-owner">{card.owner_name}</td>
+                <td className="col-owner">{card.owner_name || '-'}</td>
                 <td className="col-deck">{card.current_deck || '-'}</td>
                 <td className="col-price">
-                  {card.scryfall_data?.prices?.usd ? (
-                    <span className="price">${card.scryfall_data.prices.usd}</span>
+                  {(card.scryfall_data?.prices?.usd || card.scryfall_data?.prices?.usd_foil) ? (
+                    <span className="price">
+                      ${card.scryfall_data.prices.usd || card.scryfall_data.prices.usd_foil}
+                      {!card.scryfall_data.prices.usd && card.scryfall_data.prices.usd_foil && ' (F)'}
+                    </span>
+                  ) : (
+                    '-'
+                  )}
+                </td>
+                <td className="col-total">
+                  {(card.scryfall_data?.prices?.usd || card.scryfall_data?.prices?.usd_foil) ? (
+                    <span className="total-value">
+                      ${(parseFloat(card.scryfall_data.prices.usd || card.scryfall_data.prices.usd_foil || '0') * (card.quantity || 1)).toFixed(2)}
+                    </span>
                   ) : (
                     '-'
                   )}
