@@ -40,15 +40,27 @@ export default function Collections() {
   };
 
   const handleCreateCollection = async (data: CreateCollectionRequest) => {
-    await collectionsApi.create(data);
-    await loadCollections();
+    try {
+      await collectionsApi.create(data);
+      await loadCollections();
+      setIsModalOpen(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to create collection');
+      throw err; // Re-throw so modal can show error
+    }
   };
 
   const handleUpdateCollection = async (data: CreateCollectionRequest) => {
-    if (editingCollection) {
+    if (!editingCollection) return;
+
+    try {
       await collectionsApi.update(editingCollection.id, data);
       await loadCollections();
       setEditingCollection(null);
+      setIsModalOpen(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update collection');
+      throw err; // Re-throw so modal can show error
     }
   };
 

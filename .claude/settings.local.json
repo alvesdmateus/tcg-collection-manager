@@ -5,7 +5,8 @@
       "Bash(find:*)",
       "Bash(test:*)",
       "Bash(npm run dev:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(PGPASSWORD=314159 \"/c/Program Files/PostgreSQL/18/bin/psql.exe\":*)"
     ]
   }
 }

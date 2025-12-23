@@ -43,17 +43,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        throw new Error(result.error || 'Login failed');
       }
 
-      setToken(data.token);
-      setUser(data.user);
+      // Backend returns { success: true, data: { token, user } }
+      const { token, user } = result.data;
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      setToken(token);
+      setUser(user);
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -70,17 +73,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Registration failed');
+        throw new Error(result.error || 'Registration failed');
       }
 
-      setToken(data.token);
-      setUser(data.user);
+      // Backend returns { success: true, data: { token, user } }
+      const { token, user } = result.data;
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      setToken(token);
+      setUser(user);
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
     } catch (error) {
       console.error('Registration error:', error);
       throw error;

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Collection } from '../../types/collection';
 import './CollectionCard.css';
 
@@ -34,15 +35,21 @@ const getTcgTypeEmoji = (type: string): string => {
 };
 
 export default function CollectionCard({ collection, onEdit, onDelete }: CollectionCardProps) {
+  const navigate = useNavigate();
+
   const handleDelete = () => {
     if (window.confirm(`Are you sure you want to delete "${collection.name}"? This will also delete all cards in this collection.`)) {
       onDelete(collection);
     }
   };
 
+  const handleView = () => {
+    navigate(`/collections/${collection.id}`);
+  };
+
   return (
     <div className="collection-card">
-      <div className="collection-header">
+      <div className="collection-header" onClick={handleView} style={{ cursor: 'pointer' }}>
         <div className="collection-icon">
           {getTcgTypeEmoji(collection.tcg_type)}
         </div>
@@ -52,7 +59,7 @@ export default function CollectionCard({ collection, onEdit, onDelete }: Collect
         </div>
       </div>
 
-      <div className="collection-stats">
+      <div className="collection-stats" onClick={handleView} style={{ cursor: 'pointer' }}>
         <div className="stat">
           <span className="stat-label">Cards</span>
           <span className="stat-value">{collection.card_count || 0}</span>
@@ -67,15 +74,28 @@ export default function CollectionCard({ collection, onEdit, onDelete }: Collect
 
       <div className="collection-actions">
         <button
+          className="btn-view"
+          onClick={handleView}
+          title="View collection cards"
+        >
+          👁️ View
+        </button>
+        <button
           className="btn-edit"
-          onClick={() => onEdit(collection)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(collection);
+          }}
           title="Edit collection"
         >
           ✏️ Edit
         </button>
         <button
           className="btn-delete"
-          onClick={handleDelete}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDelete();
+          }}
           title="Delete collection"
         >
           🗑️ Delete

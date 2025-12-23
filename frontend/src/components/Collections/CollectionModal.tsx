@@ -40,7 +40,7 @@ export default function CollectionModal({
 
     try {
       await onSubmit({ name, tcg_type: tcgType });
-      onClose();
+      // Parent component handles closing the modal after successful submission
     } catch (err: any) {
       setError(err.message || 'Failed to save collection');
     } finally {

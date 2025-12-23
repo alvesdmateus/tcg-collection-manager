@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import Login from './components/Auth/Login'
 import Register from './components/Auth/Register'
 import Collections from './pages/Collections'
+import CollectionDetails from './pages/CollectionDetails'
 import ProtectedRoute from './components/ProtectedRoute'
 import './App.css'
 
@@ -19,6 +20,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Collections />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/collections/:collectionId"
+            element={
+              <ProtectedRoute>
+                <CollectionDetails />
               </ProtectedRoute>
             }
           />

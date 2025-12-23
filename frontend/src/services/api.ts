@@ -1,5 +1,8 @@
 import { Collection, CreateCollectionRequest, UpdateCollectionRequest } from '../types/collection';
 
+/**
+ * Get authorization headers with JWT token
+ */
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return {
@@ -8,38 +11,51 @@ const getAuthHeaders = () => {
   };
 };
 
+/**
+ * Handle API response and extract data
+ * Backend returns { success: true, data: T } on success
+ * Backend returns { error: string } on error
+ */
+async function handleResponse<T>(response: Response): Promise<T> {
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || `Request failed with status ${response.status}`);
+  }
+
+  return result.data;
+}
+
+/**
+ * Collections API
+ * All methods require authentication via JWT token
+ */
 export const collectionsApi = {
-  // Get all collections for the current user
+  /**
+   * Get all collections for the current user
+   */
   getAll: async (): Promise<Collection[]> => {
     const response = await fetch('/api/collections', {
       headers: getAuthHeaders(),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch collections');
-    }
-
-    const data = await response.json();
-    return data.collections;
+    return handleResponse<Collection[]>(response);
   },
 
-  // Get a single collection by ID
+  /**
+   * Get a single collection by ID
+   */
   getById: async (id: string): Promise<Collection> => {
     const response = await fetch(`/api/collections/${id}`, {
       headers: getAuthHeaders(),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch collection');
-    }
-
-    const data = await response.json();
-    return data.collection;
+    return handleResponse<Collection>(response);
   },
 
-  // Create a new collection
+  /**
+   * Create a new collection
+   */
   create: async (collection: CreateCollectionRequest): Promise<Collection> => {
     const response = await fetch('/api/collections', {
       method: 'POST',
@@ -47,16 +63,12 @@ export const collectionsApi = {
       body: JSON.stringify(collection),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create collection');
-    }
-
-    const data = await response.json();
-    return data.collection;
+    return handleResponse<Collection>(response);
   },
 
-  // Update a collection
+  /**
+   * Update a collection
+   */
   update: async (id: string, updates: UpdateCollectionRequest): Promise<Collection> => {
     const response = await fetch(`/api/collections/${id}`, {
       method: 'PATCH',
@@ -64,25 +76,20 @@ export const collectionsApi = {
       body: JSON.stringify(updates),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update collection');
-    }
-
-    const data = await response.json();
-    return data.collection;
+    return handleResponse<Collection>(response);
   },
 
-  // Delete a collection
+  /**
+   * Delete a collection
+   */
   delete: async (id: string): Promise<void> => {
     const response = await fetch(`/api/collections/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to delete collection');
-    }
+    // Delete returns { success: true, message: string }
+    // We don't need the message, just verify success
+    await handleResponse<{ message: string }>(response);
   },
 };

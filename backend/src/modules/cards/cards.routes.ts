@@ -113,6 +113,21 @@ router.post(
       .optional()
       .isBoolean()
       .withMessage('is_borrowed deve ser booleano'),
+    body('quantity')
+      .optional()
+      .toInt()
+      .isInt({ min: 1 })
+      .withMessage('Quantidade deve ser um número inteiro positivo'),
+    body('set_code')
+      .optional()
+      .trim()
+      .isLength({ max: 10 })
+      .withMessage('Código do set deve ter no máximo 10 caracteres'),
+    body('set_name')
+      .optional()
+      .trim()
+      .isLength({ max: 255 })
+      .withMessage('Nome do set deve ter no máximo 255 caracteres'),
   ]),
   asyncHandler(cardsController.addCard.bind(cardsController))
 );
@@ -157,6 +172,21 @@ router.patch(
       .optional()
       .isBoolean()
       .withMessage('is_borrowed deve ser booleano'),
+    body('quantity')
+      .optional()
+      .toInt()
+      .isInt({ min: 1 })
+      .withMessage('Quantidade deve ser um número inteiro positivo'),
+    body('set_code')
+      .optional()
+      .trim()
+      .isLength({ max: 10 })
+      .withMessage('Código do set deve ter no máximo 10 caracteres'),
+    body('set_name')
+      .optional()
+      .trim()
+      .isLength({ max: 255 })
+      .withMessage('Nome do set deve ter no máximo 255 caracteres'),
   ]),
   asyncHandler(cardsController.updateCard.bind(cardsController))
 );
