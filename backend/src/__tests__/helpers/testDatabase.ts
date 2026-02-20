@@ -7,7 +7,7 @@
  * - Mocking database queries
  */
 
-import { Pool, QueryResult } from 'pg';
+import { QueryResult } from 'pg';
 
 /**
  * Mock database pool for testing
@@ -15,8 +15,6 @@ import { Pool, QueryResult } from 'pg';
  */
 export class MockPool {
   private users: any[] = [];
-  private collections: any[] = [];
-  private cards: any[] = [];
 
   query(text: string, params?: any[]): Promise<QueryResult> {
     // Mock implementation for common queries
@@ -80,7 +78,7 @@ export class MockPool {
     return;
   }
 
-  on(event: string, listener: (...args: any[]) => void) {
+  on(_event: string, _listener: (...args: any[]) => void) {
     // No-op for tests
   }
 
@@ -89,8 +87,6 @@ export class MockPool {
    */
   clear() {
     this.users = [];
-    this.collections = [];
-    this.cards = [];
   }
 
   /**

@@ -155,7 +155,7 @@ class CardsService {
     const existingCard = await this.getCardById(cardId, userId);
 
     const updates: string[] = [];
-    const values: (string | boolean | null)[] = [];
+    const values: (string | number | boolean | null)[] = [];
     let paramIndex = 1;
 
     if (data.owner_name !== undefined) {

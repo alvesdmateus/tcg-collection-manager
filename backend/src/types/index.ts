@@ -75,13 +75,6 @@ export interface CollectionWithStats extends Collection {
 }
 
 /**
- * Collection with card count (deprecated - use CollectionWithStats)
- */
-export interface CollectionStats extends Collection {
-  card_count: number;
-}
-
-/**
  * Create Collection Request DTO
  */
 export interface CreateCollectionRequest {
@@ -162,6 +155,7 @@ export interface AuthResponse {
   user: {
     id: string;
     email: string;
+    created_at: Date;
   };
 }
 

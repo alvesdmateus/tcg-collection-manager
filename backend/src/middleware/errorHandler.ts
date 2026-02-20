@@ -68,9 +68,9 @@ export const asyncHandler = (
  */
 export function errorHandler(
   err: any,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void {
   // Log error for debugging (in production, use proper logging library)
   if (process.env.NODE_ENV === 'development') {
