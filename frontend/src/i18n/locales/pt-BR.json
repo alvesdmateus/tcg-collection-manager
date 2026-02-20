@@ -39,7 +39,19 @@
     "registerHere": "Cadastre-se aqui",
     "loginHere": "Entre aqui",
     "emailPlaceholder": "seu@email.com",
-    "passwordPlaceholder": "••••••••"
+    "passwordPlaceholder": "••••••••",
+    "welcomeBack": "Bem-vindo de volta",
+    "vaultSubtitle": "Insira seus dados para acessar seu cofre.",
+    "createAccount": "Crie sua conta",
+    "createSubtitle": "Comece a gerenciar sua coleção hoje.",
+    "forgotPassword": "Esqueceu a senha?",
+    "rememberMe": "Manter conectado",
+    "orContinueWith": "OU CONTINUE COM",
+    "continueGoogle": "Google",
+    "continueDiscord": "Discord",
+    "heroHeadline": "Domine Sua Coleção.",
+    "heroSubtitle": "Rastreie cada carta, valorize cada troca e mostre seu deck lendário ao mundo.",
+    "brandName": "TCG PORTFOLIO"
   },
   "collections": {
     "title": "Suas Coleções",

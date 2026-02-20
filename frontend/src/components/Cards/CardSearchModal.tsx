@@ -229,7 +229,7 @@ export default function CardSearchModal({
               </>
             )}
           </div>
-        ) : (
+        ) : selectedCard ? (
           <div className="card-details-section">
             <div className="selected-card-preview">
               {selectedCard.image_uris?.normal && (
@@ -328,7 +328,7 @@ export default function CardSearchModal({
               </div>
             </form>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

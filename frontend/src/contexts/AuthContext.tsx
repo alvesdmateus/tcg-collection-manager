@@ -8,7 +8,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
@@ -21,10 +21,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load token and user from localStorage on mount
+  // Load token and user from localStorage or sessionStorage on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    const storedToken =
+      localStorage.getItem('token') ?? sessionStorage.getItem('token');
+    const storedUser =
+      localStorage.getItem('user') ?? sessionStorage.getItem('user');
 
     if (storedToken && storedUser && storedUser !== 'undefined') {
       try {
@@ -32,21 +34,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(JSON.parse(storedUser));
       } catch (error) {
         console.error('Failed to parse stored user data:', error);
-        // Clear invalid data from localStorage
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
       }
     }
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, rememberMe = true) => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
@@ -56,14 +57,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(result.error || 'Login failed');
       }
 
-      // Backend returns { success: true, data: { token, user } }
-      const { token, user } = result.data;
+      const { token: newToken, user: newUser } = result.data;
 
-      setToken(token);
-      setUser(user);
+      setToken(newToken);
+      setUser(newUser);
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      const storage = rememberMe ? localStorage : sessionStorage;
+      storage.setItem('token', newToken);
+      storage.setItem('user', JSON.stringify(newUser));
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -74,9 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
@@ -86,14 +85,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(result.error || 'Registration failed');
       }
 
-      // Backend returns { success: true, data: { token, user } }
-      const { token, user } = result.data;
+      const { token: newToken, user: newUser } = result.data;
 
-      setToken(token);
-      setUser(user);
+      setToken(newToken);
+      setUser(newUser);
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', newToken);
+      localStorage.setItem('user', JSON.stringify(newUser));
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -105,6 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
   };
 
   return (

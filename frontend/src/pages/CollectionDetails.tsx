@@ -260,7 +260,7 @@ export default function CollectionDetails() {
                 >
                   <option value="">{t('cards.allDecks') || 'All Decks'}</option>
                   {filterOptions.decks.map(deck => (
-                    <option key={deck} value={deck}>{deck}</option>
+                    <option key={deck ?? ''} value={deck ?? ''}>{deck}</option>
                   ))}
                 </select>
 

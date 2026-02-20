@@ -42,7 +42,7 @@ export default function CardEditModal({
     try {
       await onUpdate({
         owner_name: ownerName.trim(),
-        current_deck: currentDeck.trim() || null,
+        current_deck: currentDeck.trim() || undefined,
         is_borrowed: isBorrowed,
         quantity: Number(quantity),
       });
