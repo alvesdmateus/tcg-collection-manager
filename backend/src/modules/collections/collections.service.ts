@@ -1,6 +1,5 @@
 import pool from '../../config/database';
 import { Collection, CollectionStats, CollectionWithStats, CreateCollectionRequest, UpdateCollectionRequest, AppError } from '../../types';
-import scryfallService from '../cards/scryfall.service';
 
 /**
  * Collections Service
@@ -36,55 +35,19 @@ class CollectionsService {
    * @returns Array of user's collections with statistics
    */
   async getUserCollections(userId: string): Promise<CollectionWithStats[]> {
-    const result = await pool.query<Collection>(
-      'SELECT * FROM collections WHERE user_id = $1 ORDER BY created_at DESC',
+    const result = await pool.query<CollectionWithStats>(
+      `SELECT
+         c.*,
+         COALESCE(SUM(ca.quantity), 0)::int AS card_count
+       FROM collections c
+       LEFT JOIN cards ca ON ca.collection_id = c.id
+       WHERE c.user_id = $1
+       GROUP BY c.id
+       ORDER BY c.created_at DESC`,
       [userId]
     );
 
-    // Enrich each collection with card count and total value
-    const collectionsWithStats = await Promise.all(
-      result.rows.map(async (collection) => {
-        // Get card count (sum of quantities)
-        const cardCountResult = await pool.query<{ total_cards: string }>(
-          'SELECT COALESCE(SUM(quantity), 0) as total_cards FROM cards WHERE collection_id = $1',
-          [collection.id]
-        );
-        const card_count = parseInt(cardCountResult.rows[0].total_cards, 10);
-
-        // Get all cards with scryfall_ids to calculate total value
-        const cardsResult = await pool.query<{ scryfall_id: string; quantity: number }>(
-          'SELECT scryfall_id, quantity FROM cards WHERE collection_id = $1',
-          [collection.id]
-        );
-
-        // Calculate total value by fetching prices from Scryfall
-        let total_value = 0;
-        await Promise.all(
-          cardsResult.rows.map(async (card) => {
-            try {
-              const scryfallData = await scryfallService.getCardById(card.scryfall_id);
-              const price = parseFloat(scryfallData.prices?.usd || scryfallData.prices?.usd_foil || '0');
-              total_value += price * card.quantity;
-            } catch (error) {
-              // If Scryfall fetch fails, skip this card
-              console.warn(`Failed to fetch price for card ${card.scryfall_id}`);
-            }
-          })
-        );
-
-        return {
-          ...collection,
-          card_count,
-          total_value,
-        };
-      })
-    );
-
-    // Log cache statistics
-    const cacheStats = scryfallService.getCacheStats();
-    console.log(`📊 Scryfall Cache Stats: ${cacheStats.hits} hits, ${cacheStats.misses} misses (${cacheStats.hitRate} hit rate), ${cacheStats.size} entries cached`);
-
-    return collectionsWithStats;
+    return result.rows;
   }
 
   /**

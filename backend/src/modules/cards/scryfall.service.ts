@@ -13,6 +13,11 @@ interface CacheEntry {
   timestamp: number;
 }
 
+interface SearchCacheEntry {
+  data: ScryfallSearchResponse | ScryfallAutocompleteResponse;
+  timestamp: number;
+}
+
 /**
  * Scryfall API Service with Caching
  *
@@ -35,7 +40,9 @@ interface CacheEntry {
 class ScryfallService {
   private readonly baseUrl = 'https://api.scryfall.com';
   private readonly cache = new Map<string, CacheEntry>();
+  private readonly searchCache = new Map<string, SearchCacheEntry>();
   private readonly cacheTTL = 60 * 60 * 1000; // 1 hour in milliseconds
+  private readonly searchCacheTTL = 24 * 60 * 60 * 1000; // 24 hours for search results
   private cacheHits = 0;
   private cacheMisses = 0;
 
@@ -46,6 +53,12 @@ class ScryfallService {
    * @returns Search results with cards
    */
   async searchCards(query: string): Promise<ScryfallSearchResponse> {
+    const cacheKey = `search:${query}`;
+    const cached = this.searchCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.searchCacheTTL) {
+      return cached.data as ScryfallSearchResponse;
+    }
+
     try {
       const url = `${this.baseUrl}/cards/search?q=${encodeURIComponent(query)}`;
       const response = await fetch(url);
@@ -62,7 +75,9 @@ class ScryfallService {
         throw new Error(`Scryfall API error: ${response.statusText}`);
       }
 
-      return (await response.json()) as ScryfallSearchResponse;
+      const data = (await response.json()) as ScryfallSearchResponse;
+      this.searchCache.set(cacheKey, { data, timestamp: Date.now() });
+      return data;
     } catch (error) {
       console.error('Scryfall search error:', error);
       throw new AppError('Erro ao buscar cartas no Scryfall', 500);
@@ -184,6 +199,12 @@ class ScryfallService {
    * @returns List of matching card names
    */
   async autocomplete(query: string): Promise<ScryfallAutocompleteResponse> {
+    const cacheKey = `autocomplete:${query}`;
+    const cached = this.searchCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.searchCacheTTL) {
+      return cached.data as ScryfallAutocompleteResponse;
+    }
+
     try {
       const url = `${this.baseUrl}/cards/autocomplete?q=${encodeURIComponent(query)}`;
       const response = await fetch(url);
@@ -192,7 +213,9 @@ class ScryfallService {
         throw new Error(`Scryfall API error: ${response.statusText}`);
       }
 
-      return (await response.json()) as ScryfallAutocompleteResponse;
+      const data = (await response.json()) as ScryfallAutocompleteResponse;
+      this.searchCache.set(cacheKey, { data, timestamp: Date.now() });
+      return data;
     } catch (error) {
       console.error('Scryfall autocomplete error:', error);
       throw new AppError('Erro ao buscar sugestões no Scryfall', 500);

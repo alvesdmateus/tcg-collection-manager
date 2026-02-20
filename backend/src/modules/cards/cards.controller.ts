@@ -21,11 +21,20 @@ class CardsController {
     const { collectionId } = req.params;
     const userId = req.user!.userId;
 
-    const cards = await cardsService.getCollectionCards(collectionId, userId);
+    const limit = Math.min(parseInt(req.query.limit as string) || 500, 500);
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const { cards, total } = await cardsService.getCollectionCards(collectionId, userId, limit, offset);
 
     res.status(200).json({
       success: true,
       data: cards,
+      pagination: {
+        total,
+        limit,
+        offset,
+        has_more: offset + cards.length < total,
+      },
     });
   }
 

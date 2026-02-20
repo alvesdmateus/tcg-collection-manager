@@ -71,7 +71,7 @@ export interface Collection {
  */
 export interface CollectionWithStats extends Collection {
   card_count: number;
-  total_value: number;
+  total_value?: number;
 }
 
 /**

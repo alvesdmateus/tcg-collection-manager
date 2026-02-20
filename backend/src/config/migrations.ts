@@ -85,6 +85,24 @@ export async function runMigrations(): Promise<void> {
     `);
     console.log('✅ Cards scryfall_id index created');
 
+    // Composite index for duplicate-check queries (collection_id + scryfall_id)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_cards_collection_scryfall ON cards(collection_id, scryfall_id);
+    `);
+    console.log('✅ Cards composite collection_id+scryfall_id index created');
+
+    // Index for ORDER BY added_at DESC (default sort)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_cards_added_at ON cards(added_at DESC);
+    `);
+    console.log('✅ Cards added_at index created');
+
+    // Index for filtering borrowed cards
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_cards_is_borrowed ON cards(is_borrowed);
+    `);
+    console.log('✅ Cards is_borrowed index created');
+
     console.log('🎉 All migrations completed successfully!');
   } catch (error) {
     console.error('❌ Migration failed:', error);

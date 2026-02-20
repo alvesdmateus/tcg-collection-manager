@@ -19,41 +19,40 @@ class CardsService {
    */
   async getCollectionCards(
     collectionId: string,
-    userId: string
-  ): Promise<CardWithDetails[]> {
+    userId: string,
+    limit = 500,
+    offset = 0
+  ): Promise<{ cards: CardWithDetails[]; total: number }> {
     // Verify collection ownership
     await collectionsService.getCollectionById(collectionId, userId);
 
-    const result = await pool.query<Card>(
-      'SELECT * FROM cards WHERE collection_id = $1 ORDER BY added_at DESC',
-      [collectionId]
-    );
+    const [result, countResult] = await Promise.all([
+      pool.query<Card>(
+        'SELECT * FROM cards WHERE collection_id = $1 ORDER BY added_at DESC LIMIT $2 OFFSET $3',
+        [collectionId, limit, offset]
+      ),
+      pool.query<{ count: string }>(
+        'SELECT COUNT(*) as count FROM cards WHERE collection_id = $1',
+        [collectionId]
+      ),
+    ]);
+
+    const total = parseInt(countResult.rows[0].count, 10);
 
     // Enrich cards with Scryfall data
-    const cardsWithDetails = await Promise.all(
+    const cards = await Promise.all(
       result.rows.map(async (card) => {
         try {
           const scryfallData = await scryfallService.getCardById(card.scryfall_id);
-          return {
-            ...card,
-            scryfall_data: scryfallData,
-          };
+          return { ...card, scryfall_data: scryfallData };
         } catch (error) {
-          // If Scryfall fetch fails, return card without details
           console.warn(`Failed to fetch Scryfall data for card ${card.id}:`, error);
-          return {
-            ...card,
-            scryfall_data: null,
-          };
+          return { ...card, scryfall_data: null };
         }
       })
     );
 
-    // Log cache statistics
-    const cacheStats = scryfallService.getCacheStats();
-    console.log(`✅ Fetched ${cardsWithDetails.length} cards with Scryfall data`);
-    console.log(`📊 Scryfall Cache: ${cacheStats.hits} hits, ${cacheStats.misses} misses (${cacheStats.hitRate} hit rate)`);
-    return cardsWithDetails;
+    return { cards, total };
   }
 
   /**
