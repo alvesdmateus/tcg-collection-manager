@@ -38,7 +38,9 @@ class CollectionsService {
     const result = await pool.query<CollectionWithStats>(
       `SELECT
          c.*,
-         COALESCE(SUM(ca.quantity), 0)::int AS card_count
+         COALESCE(SUM(ca.quantity), 0)::int AS card_count,
+         COALESCE(SUM(ca.price_usd * ca.quantity), 0)::numeric(10,2) AS total_value,
+         (SELECT scryfall_id FROM cards WHERE collection_id = c.id ORDER BY added_at DESC LIMIT 1) AS cover_card_id
        FROM collections c
        LEFT JOIN cards ca ON ca.collection_id = c.id
        WHERE c.user_id = $1

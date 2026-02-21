@@ -1,30 +1,5 @@
 import { Collection, CreateCollectionRequest, UpdateCollectionRequest } from '../types/collection';
-
-/**
- * Get authorization headers with JWT token
- */
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': token ? `Bearer ${token}` : '',
-  };
-};
-
-/**
- * Handle API response and extract data
- * Backend returns { success: true, data: T } on success
- * Backend returns { error: string } on error
- */
-async function handleResponse<T>(response: Response): Promise<T> {
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.error || `Request failed with status ${response.status}`);
-  }
-
-  return result.data;
-}
+import { getAuthHeaders, handleResponse, fetchWithConnectionCheck } from './fetchClient';
 
 /**
  * Collections API
@@ -35,7 +10,7 @@ export const collectionsApi = {
    * Get all collections for the current user
    */
   getAll: async (): Promise<Collection[]> => {
-    const response = await fetch('/api/collections', {
+    const response = await fetchWithConnectionCheck('/api/collections', {
       headers: getAuthHeaders(),
     });
 
@@ -46,7 +21,7 @@ export const collectionsApi = {
    * Get a single collection by ID
    */
   getById: async (id: string): Promise<Collection> => {
-    const response = await fetch(`/api/collections/${id}`, {
+    const response = await fetchWithConnectionCheck(`/api/collections/${id}`, {
       headers: getAuthHeaders(),
     });
 
@@ -57,7 +32,7 @@ export const collectionsApi = {
    * Create a new collection
    */
   create: async (collection: CreateCollectionRequest): Promise<Collection> => {
-    const response = await fetch('/api/collections', {
+    const response = await fetchWithConnectionCheck('/api/collections', {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(collection),
@@ -70,7 +45,7 @@ export const collectionsApi = {
    * Update a collection
    */
   update: async (id: string, updates: UpdateCollectionRequest): Promise<Collection> => {
-    const response = await fetch(`/api/collections/${id}`, {
+    const response = await fetchWithConnectionCheck(`/api/collections/${id}`, {
       method: 'PATCH',
       headers: getAuthHeaders(),
       body: JSON.stringify(updates),
@@ -83,7 +58,7 @@ export const collectionsApi = {
    * Delete a collection
    */
   delete: async (id: string): Promise<void> => {
-    const response = await fetch(`/api/collections/${id}`, {
+    const response = await fetchWithConnectionCheck(`/api/collections/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });

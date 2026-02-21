@@ -5,30 +5,7 @@ import {
   ScryfallSearchResponse,
   ScryfallAutocompleteResponse,
 } from '../types/card';
-
-/**
- * Get authorization headers with JWT token
- */
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': token ? `Bearer ${token}` : '',
-  };
-};
-
-/**
- * Handle API response and extract data
- */
-async function handleResponse<T>(response: Response): Promise<T> {
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.error || `Request failed with status ${response.status}`);
-  }
-
-  return result.data;
-}
+import { getAuthHeaders, handleResponse, fetchWithConnectionCheck } from './fetchClient';
 
 /**
  * Cards API
@@ -39,7 +16,7 @@ export const cardsApi = {
    * Get all cards in a collection
    */
   getCollectionCards: async (collectionId: string): Promise<CardWithDetails[]> => {
-    const response = await fetch(`/api/collections/${collectionId}/cards`, {
+    const response = await fetchWithConnectionCheck(`/api/collections/${collectionId}/cards`, {
       headers: getAuthHeaders(),
     });
 
@@ -50,7 +27,7 @@ export const cardsApi = {
    * Get a single card by ID
    */
   getById: async (cardId: string): Promise<CardWithDetails> => {
-    const response = await fetch(`/api/cards/${cardId}`, {
+    const response = await fetchWithConnectionCheck(`/api/cards/${cardId}`, {
       headers: getAuthHeaders(),
     });
 
@@ -61,7 +38,7 @@ export const cardsApi = {
    * Add a card to a collection
    */
   addCard: async (collectionId: string, card: AddCardRequest): Promise<CardWithDetails> => {
-    const response = await fetch(`/api/collections/${collectionId}/cards`, {
+    const response = await fetchWithConnectionCheck(`/api/collections/${collectionId}/cards`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(card),
@@ -74,7 +51,7 @@ export const cardsApi = {
    * Update a card
    */
   update: async (cardId: string, updates: UpdateCardRequest): Promise<CardWithDetails> => {
-    const response = await fetch(`/api/cards/${cardId}`, {
+    const response = await fetchWithConnectionCheck(`/api/cards/${cardId}`, {
       method: 'PATCH',
       headers: getAuthHeaders(),
       body: JSON.stringify(updates),
@@ -87,7 +64,7 @@ export const cardsApi = {
    * Delete a card
    */
   delete: async (cardId: string): Promise<void> => {
-    const response = await fetch(`/api/cards/${cardId}`, {
+    const response = await fetchWithConnectionCheck(`/api/cards/${cardId}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
@@ -96,10 +73,27 @@ export const cardsApi = {
   },
 
   /**
+   * Import a deck list (bulk add cards by name)
+   */
+  importDeckList: async (
+    collectionId: string,
+    entries: { name: string; quantity: number }[],
+    ownerName: string
+  ): Promise<{ imported: CardWithDetails[]; failed: { name: string; reason: string }[] }> => {
+    const response = await fetchWithConnectionCheck(`/api/collections/${collectionId}/cards/import`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ entries, owner_name: ownerName }),
+    });
+
+    return handleResponse<{ imported: CardWithDetails[]; failed: { name: string; reason: string }[] }>(response);
+  },
+
+  /**
    * Search cards via Scryfall
    */
   searchCards: async (query: string): Promise<ScryfallSearchResponse> => {
-    const response = await fetch(`/api/cards/search?q=${encodeURIComponent(query)}`, {
+    const response = await fetchWithConnectionCheck(`/api/cards/search?q=${encodeURIComponent(query)}`, {
       headers: getAuthHeaders(),
     });
 
@@ -110,7 +104,7 @@ export const cardsApi = {
    * Get autocomplete suggestions from Scryfall
    */
   autocomplete: async (query: string): Promise<ScryfallAutocompleteResponse> => {
-    const response = await fetch(`/api/cards/autocomplete?q=${encodeURIComponent(query)}`, {
+    const response = await fetchWithConnectionCheck(`/api/cards/autocomplete?q=${encodeURIComponent(query)}`, {
       headers: getAuthHeaders(),
     });
 

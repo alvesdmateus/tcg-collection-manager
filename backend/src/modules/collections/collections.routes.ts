@@ -135,6 +135,35 @@ router.get(
 );
 
 /**
+ * POST /api/collections/:collectionId/cards/import
+ * Import a deck list (bulk add cards by name)
+ *
+ * Body:
+ * - entries: Array of { name, quantity }
+ * - owner_name: Owner name for all imported cards
+ */
+router.post(
+  '/:collectionId/cards/import',
+  validateRequest([
+    param('collectionId').isUUID().withMessage('ID da coleção inválido'),
+    body('entries')
+      .isArray({ min: 1 })
+      .withMessage('Lista de cartas é obrigatória'),
+    body('entries.*.name')
+      .notEmpty()
+      .withMessage('Nome da carta é obrigatório'),
+    body('entries.*.quantity')
+      .isInt({ min: 1 })
+      .withMessage('Quantidade deve ser um número inteiro positivo'),
+    body('owner_name')
+      .trim()
+      .notEmpty()
+      .withMessage('Nome do proprietário é obrigatório'),
+  ]),
+  asyncHandler(cardsController.importDeckList.bind(cardsController))
+);
+
+/**
  * POST /api/collections/:collectionId/cards
  * Add card to collection
  */
@@ -162,6 +191,10 @@ router.post(
       .optional()
       .isBoolean()
       .withMessage('is_borrowed deve ser booleano'),
+    body('is_foil')
+      .optional()
+      .isBoolean()
+      .withMessage('is_foil deve ser booleano'),
     body('quantity')
       .optional()
       .toInt()

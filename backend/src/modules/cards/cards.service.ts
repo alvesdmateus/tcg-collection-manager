@@ -115,10 +115,16 @@ class CardsService {
     // Verify card exists in Scryfall
     const scryfallData = await scryfallService.getCardById(data.scryfall_id);
 
+    // Extract USD price from Scryfall data
+    const priceUsd = parseFloat(scryfallData.prices?.usd || scryfallData.prices?.usd_foil || '0') || 0;
+
+    // Detect foil: if user didn't specify, default based on Scryfall prices
+    const isFoil = data.is_foil ?? (!scryfallData.prices?.usd && !!scryfallData.prices?.usd_foil);
+
     // Insert card
     const result = await pool.query<Card>(
-      `INSERT INTO cards (collection_id, scryfall_id, owner_name, current_deck, is_borrowed, quantity, set_code, set_name)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO cards (collection_id, scryfall_id, owner_name, current_deck, is_borrowed, is_foil, quantity, set_code, set_name, price_usd)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         collectionId,
@@ -126,9 +132,11 @@ class CardsService {
         data.owner_name,
         data.current_deck || null,
         data.is_borrowed || false,
+        isFoil,
         data.quantity || 1,
         data.set_code || scryfallData.set || null,
         data.set_name || scryfallData.set_name || null,
+        priceUsd,
       ]
     );
 
@@ -171,6 +179,11 @@ class CardsService {
     if (data.is_borrowed !== undefined) {
       updates.push(`is_borrowed = $${paramIndex++}`);
       values.push(data.is_borrowed);
+    }
+
+    if (data.is_foil !== undefined) {
+      updates.push(`is_foil = $${paramIndex++}`);
+      values.push(data.is_foil);
     }
 
     if (data.quantity !== undefined) {
@@ -216,6 +229,56 @@ class CardsService {
     await this.getCardById(cardId, userId);
 
     await pool.query('DELETE FROM cards WHERE id = $1', [cardId]);
+  }
+
+  /**
+   * Import a deck list (bulk add cards by name)
+   *
+   * @param collectionId - Collection ID
+   * @param userId - User ID for ownership verification
+   * @param entries - Array of { name, quantity } parsed from deck list
+   * @param ownerName - Owner name for all imported cards
+   * @returns Imported cards and failed entries
+   */
+  async importDeckList(
+    collectionId: string,
+    userId: string,
+    entries: { name: string; quantity: number }[],
+    ownerName: string
+  ): Promise<{ imported: CardWithDetails[]; failed: { name: string; reason: string }[] }> {
+    // Verify collection ownership
+    await collectionsService.getCollectionById(collectionId, userId);
+
+    const imported: CardWithDetails[] = [];
+    const failed: { name: string; reason: string }[] = [];
+
+    for (const entry of entries) {
+      try {
+        const scryfallData = await scryfallService.getCardByName(entry.name);
+        const priceUsd = parseFloat(scryfallData.prices?.usd || scryfallData.prices?.usd_foil || '0') || 0;
+
+        const result = await pool.query<Card>(
+          `INSERT INTO cards (collection_id, scryfall_id, owner_name, quantity, set_code, set_name, price_usd)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           RETURNING *`,
+          [
+            collectionId,
+            scryfallData.id,
+            ownerName,
+            entry.quantity,
+            scryfallData.set,
+            scryfallData.set_name,
+            priceUsd,
+          ]
+        );
+
+        imported.push({ ...result.rows[0], scryfall_data: scryfallData });
+      } catch (error: any) {
+        failed.push({ name: entry.name, reason: error.message || 'Card not found' });
+      }
+    }
+
+    return { imported, failed };
   }
 }
 

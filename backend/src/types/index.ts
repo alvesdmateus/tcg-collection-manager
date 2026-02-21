@@ -72,6 +72,7 @@ export interface Collection {
 export interface CollectionWithStats extends Collection {
   card_count: number;
   total_value?: number;
+  cover_card_id?: string | null;
 }
 
 /**
@@ -100,9 +101,11 @@ export interface Card {
   owner_name: string;
   current_deck: string | null;
   is_borrowed: boolean;
+  is_foil: boolean;
   quantity: number;
   set_code: string | null;
   set_name: string | null;
+  price_usd: number;
   added_at: Date;
 }
 
@@ -114,6 +117,7 @@ export interface CreateCardRequest {
   owner_name: string;
   current_deck?: string;
   is_borrowed?: boolean;
+  is_foil?: boolean;
   quantity?: number;
   set_code?: string;
   set_name?: string;
@@ -126,6 +130,7 @@ export interface UpdateCardRequest {
   owner_name?: string;
   current_deck?: string;
   is_borrowed?: boolean;
+  is_foil?: boolean;
   quantity?: number;
   set_code?: string;
   set_name?: string;

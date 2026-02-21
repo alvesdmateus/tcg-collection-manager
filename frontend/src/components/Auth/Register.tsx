@@ -103,11 +103,6 @@ export default function Register() {
             <p>{t('auth.heroSubtitle')}</p>
           </div>
 
-          <div className="auth-card-thumbnails">
-            <div className="card-thumb" />
-            <div className="card-thumb" />
-            <div className="card-thumb" />
-          </div>
         </div>
       </div>
 

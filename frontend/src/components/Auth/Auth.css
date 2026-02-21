@@ -21,17 +21,26 @@
   padding: 2.5rem;
 }
 
-/* Background layer — set background-image on this div when assets are ready */
+/* Background layer */
 .auth-bg {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse 70% 55% at 50% 38%, rgba(14, 80, 120, 0.55) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 30% at 50% 35%, rgba(30, 120, 180, 0.25) 0%, transparent 60%),
-    linear-gradient(180deg, #091520 0%, #0d0d14 100%);
-  background-size: cover;
-  background-position: center;
   z-index: 0;
+}
+
+.auth-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/images/auth-bg.jpg') center / contain no-repeat;
+  background-color: #0d0d14;
+}
+
+.auth-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(9, 21, 32, 0.25) 0%, rgba(13, 13, 20, 0.8) 85%);
 }
 
 .auth-left-content {
@@ -86,32 +95,9 @@
 
 .auth-hero p {
   font-size: 0.95rem;
-  color: #7777aa;
+  color: #c0c0d8;
   line-height: 1.65;
   max-width: 320px;
-}
-
-/* Card thumbnails */
-.auth-card-thumbnails {
-  display: flex;
-  gap: 0.85rem;
-  align-items: flex-end;
-}
-
-.card-thumb {
-  width: 88px;
-  height: 122px;
-  border-radius: 10px;
-  background-color: #141420;
-  border: 1px solid #2a2a3a;
-  background-size: cover;
-  background-position: center;
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
-}
-
-.card-thumb:hover {
-  transform: translateY(-5px);
 }
 
 /* ===================================================

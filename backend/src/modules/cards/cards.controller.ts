@@ -61,13 +61,14 @@ class CardsController {
   async addCard(req: AuthenticatedRequest, res: Response): Promise<void> {
     const { collectionId } = req.params;
     const userId = req.user!.userId;
-    const { scryfall_id, owner_name, current_deck, is_borrowed, quantity, set_code, set_name } = req.body;
+    const { scryfall_id, owner_name, current_deck, is_borrowed, is_foil, quantity, set_code, set_name } = req.body;
 
     const card = await cardsService.addCard(collectionId, userId, {
       scryfall_id,
       owner_name,
       current_deck,
       is_borrowed,
+      is_foil,
       quantity,
       set_code,
       set_name,
@@ -86,12 +87,13 @@ class CardsController {
   async updateCard(req: AuthenticatedRequest, res: Response): Promise<void> {
     const { id } = req.params;
     const userId = req.user!.userId;
-    const { owner_name, current_deck, is_borrowed, quantity, set_code, set_name } = req.body;
+    const { owner_name, current_deck, is_borrowed, is_foil, quantity, set_code, set_name } = req.body;
 
     const card = await cardsService.updateCard(id, userId, {
       owner_name,
       current_deck,
       is_borrowed,
+      is_foil,
       quantity,
       set_code,
       set_name,
@@ -116,6 +118,23 @@ class CardsController {
     res.status(200).json({
       success: true,
       message: 'Carta excluída com sucesso',
+    });
+  }
+
+  /**
+   * POST /api/collections/:collectionId/cards/import
+   * Import a deck list (bulk add cards by name)
+   */
+  async importDeckList(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const { collectionId } = req.params;
+    const userId = req.user!.userId;
+    const { entries, owner_name } = req.body;
+
+    const result = await cardsService.importDeckList(collectionId, userId, entries, owner_name);
+
+    res.status(200).json({
+      success: true,
+      data: result,
     });
   }
 

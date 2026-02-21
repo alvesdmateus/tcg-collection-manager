@@ -68,6 +68,7 @@ export async function runMigrations(): Promise<void> {
         scryfall_id VARCHAR(255) NOT NULL,
         owner_name VARCHAR(255) NOT NULL,
         current_deck VARCHAR(255),
+        quantity INTEGER DEFAULT 1,
         is_borrowed BOOLEAN DEFAULT false,
         added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -102,6 +103,27 @@ export async function runMigrations(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_cards_is_borrowed ON cards(is_borrowed);
     `);
     console.log('✅ Cards is_borrowed index created');
+
+    // Add set_code and set_name columns to cards table (idempotent)
+    await client.query(`
+      ALTER TABLE cards ADD COLUMN IF NOT EXISTS set_code VARCHAR(20);
+    `);
+    await client.query(`
+      ALTER TABLE cards ADD COLUMN IF NOT EXISTS set_name VARCHAR(255);
+    `);
+    console.log('✅ Cards set_code and set_name columns ensured');
+
+    // Add price_usd column to cards table (idempotent)
+    await client.query(`
+      ALTER TABLE cards ADD COLUMN IF NOT EXISTS price_usd NUMERIC(10,2) DEFAULT 0;
+    `);
+    console.log('✅ Cards price_usd column ensured');
+
+    // Add is_foil column to cards table (idempotent)
+    await client.query(`
+      ALTER TABLE cards ADD COLUMN IF NOT EXISTS is_foil BOOLEAN DEFAULT false;
+    `);
+    console.log('✅ Cards is_foil column ensured');
 
     console.log('🎉 All migrations completed successfully!');
   } catch (error) {

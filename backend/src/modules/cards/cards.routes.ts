@@ -113,6 +113,10 @@ router.post(
       .optional()
       .isBoolean()
       .withMessage('is_borrowed deve ser booleano'),
+    body('is_foil')
+      .optional()
+      .isBoolean()
+      .withMessage('is_foil deve ser booleano'),
     body('quantity')
       .optional()
       .toInt()
@@ -172,6 +176,10 @@ router.patch(
       .optional()
       .isBoolean()
       .withMessage('is_borrowed deve ser booleano'),
+    body('is_foil')
+      .optional()
+      .isBoolean()
+      .withMessage('is_foil deve ser booleano'),
     body('quantity')
       .optional()
       .toInt()

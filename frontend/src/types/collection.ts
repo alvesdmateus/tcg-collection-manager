@@ -12,6 +12,7 @@ export interface Collection {
   created_at: string;
   card_count?: number;
   total_value?: number;
+  cover_card_id?: string | null;
 }
 
 export interface CreateCollectionRequest {

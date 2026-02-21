@@ -1,0 +1,23 @@
+/* ===================================================
+   SIDEBAR LAYOUT — WRAPPER
+   =================================================== */
+
+.sidebar-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #0d0d14;
+}
+
+.sidebar-layout-main {
+  flex: 1;
+  margin-left: 240px;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+/* Mobile: remove margin when sidebar is hidden */
+@media (max-width: 768px) {
+  .sidebar-layout-main {
+    margin-left: 0;
+  }
+}
